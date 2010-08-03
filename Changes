@@ -1,0 +1,6 @@
+Revision history for Perl extension Pharaoh::BootStrap.
+
+0.01  Tue Aug  3 20:23:34 2010
+	- original version; created by h2xs 1.23 with options
+		-XA -n Pharaoh::BootStrap
+

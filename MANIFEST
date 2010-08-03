@@ -1,0 +1,6 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/Pharaoh-BootStrap.t
+lib/Pharaoh/BootStrap.pm
