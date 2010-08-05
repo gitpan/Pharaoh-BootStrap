@@ -1,12 +1,19 @@
-use 5.012001;
+use strict;
+use warnings;
 use ExtUtils::MakeMaker;
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
+
 WriteMakefile(
-    NAME              => 'Pharaoh::BootStrap',
-    VERSION_FROM      => 'lib/Pharaoh/BootStrap.pm', # finds $VERSION
-    PREREQ_PM         => {}, # e.g., Module::Name => 1.1
-    ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
-      (ABSTRACT_FROM  => 'lib/Pharaoh/BootStrap.pm', # retrieve abstract from module
-       AUTHOR         => 'A. U. Thor <a.u.thor@a.galaxy.far.far.away>') : ()),
+    NAME                => 'Pharaoh::BootStrap',
+    AUTHOR              => q{Dmytro Zagashev <zdm@cpan.org>},
+    VERSION_FROM        => 'lib/Pharaoh/BootStrap.pm',
+    ABSTRACT_FROM       => 'lib/Pharaoh/BootStrap.pm',
+    ($ExtUtils::MakeMaker::VERSION >= 6.3002
+      ? ('LICENSE'=> 'perl')
+      : ()),
+    PL_FILES            => {},
+    PREREQ_PM => {
+        'Test::More' => 0,
+    },
+    dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
+    clean               => { FILES => 'Pharaoh-BootStrap-*' },
 );
