@@ -1,4 +1,4 @@
-package Pharaoh::BootStrap 4.00;
+package Pharaoh::BootStrap 4.01;
 
 use 5.14.1;
 use warnings;
@@ -14,12 +14,12 @@ BEGIN {
     chdir $FindBin::Bin;
     chdir($main::project_path) if $main::project_path;
 
-    if (!$main::pharaoh_path && $main::pharaoh_config && -e $main::pharaoh_config) {
-        $main::pharaoh_path = do $main::pharaoh_config || die $@;
+    if (ref $main::pharaoh_path eq 'SCALAR' && -e $$main::pharaoh_path) {
+        $main::pharaoh_path = do $$main::pharaoh_path || die $@;
     }
 
     @INC = grep { $_ ne '.' } @INC;
-    unshift @INC, $main::pharaoh_path if ($main::pharaoh_path && -e $main::pharaoh_path);
+    unshift @INC, $main::pharaoh_path if ($main::pharaoh_path && -d $main::pharaoh_path);
     unshift @INC, @main::libs         if (@main::libs);
     unshift @INC, '.';
 }
@@ -30,7 +30,7 @@ Pharaoh::BootStrap - Pharaoh bootstrap module.
 
 =head1 VERSION
 
-Version 4.00
+Version 4.01
 
 =cut
 
@@ -38,7 +38,7 @@ Version 4.00
 
 Quick summary of what the module does.
 
-    #!/usr/bin/perl
+#!/usr/bin/perl
 
     package main;
 
@@ -49,12 +49,11 @@ Quick summary of what the module does.
 
     BEGIN {
         use Getopt::Euclid qw (:minimal_keys);
-        our $project_path   = '../';
-        our $pharaoh_path   = '';
-        our $pharaoh_config = 'lib/pharaoh.pm';
-        our @libs           = qw(lib/);
-        our @config         = qw(lib/cfg_common.pm lib/cfg_local.pm);
-        our $config         = {};
+        our $project_path = '../';                                     #project root path, absolute or related to script startup directory
+        our $pharaoh_path = \'lib/pharaoh.pm';                         #absolute path to Pharaoh framework or scalar reference to pharaoh.pm file
+        our @libs         = qw(lib/);                                  #additional libraries paths, absolute or related to $project_path
+        our @config       = qw(lib/cfg_common.pm lib/cfg_local.pm);    #local configuration files
+        our $config       = {};                                        #inline configuration
         require Pharaoh::BootStrap;
     }
 
