@@ -1,8 +1,9 @@
-package Pharaoh::BootStrap 3.04;
+package Pharaoh::BootStrap 4.00;
 
-use 5.12.0;
+use 5.14.1;
 use warnings;
 use utf8;
+use namespace::autoclean;
 use open IO => ':utf8';
 
 BEGIN {
@@ -17,8 +18,10 @@ BEGIN {
         $main::pharaoh_path = do $main::pharaoh_config || die $@;
     }
 
-    push @INC, @main::libs if (@main::libs);
-    push @INC, $main::pharaoh_path if ($main::pharaoh_path && -e $main::pharaoh_path);
+    @INC = grep { $_ ne '.' } @INC;
+    unshift @INC, $main::pharaoh_path if ($main::pharaoh_path && -e $main::pharaoh_path);
+    unshift @INC, @main::libs         if (@main::libs);
+    unshift @INC, '.';
 }
 
 =head1 NAME
@@ -27,7 +30,7 @@ Pharaoh::BootStrap - Pharaoh bootstrap module.
 
 =head1 VERSION
 
-Version 3.04
+Version 4.00
 
 =cut
 
@@ -39,7 +42,7 @@ Quick summary of what the module does.
 
     package main;
 
-    use 5.12.0;
+    use 5.14.1;
     use warnings;
     use utf8;
     use open IO => ':utf8';
@@ -55,7 +58,7 @@ Quick summary of what the module does.
         require Pharaoh::BootStrap;
     }
 
-    use Pharaoh::Core 3.00;
+    use Pharaoh::Core 4.00;
 
 =head1 AUTHOR
 
@@ -97,7 +100,7 @@ L<http://search.cpan.org/dist/Pharaoh-BootStrap/>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2010 Dmytro Zagashev.
+Copyright 2011 Dmytro Zagashev.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
