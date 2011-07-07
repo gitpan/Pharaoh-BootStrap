@@ -1,4 +1,4 @@
-package Pharaoh::BootStrap 4.01;
+package Pharaoh::BootStrap 4.02;
 
 use 5.14.1;
 use warnings;
@@ -30,7 +30,7 @@ Pharaoh::BootStrap - Pharaoh bootstrap module.
 
 =head1 VERSION
 
-Version 4.01
+Version 4.02
 
 =cut
 
@@ -38,7 +38,7 @@ Version 4.01
 
 Quick summary of what the module does.
 
-#!/usr/bin/perl
+    #!/usr/bin/perl
 
     package main;
 
@@ -46,18 +46,17 @@ Quick summary of what the module does.
     use warnings;
     use utf8;
     use open IO => ':utf8';
-
+    
     BEGIN {
         use Getopt::Euclid qw (:minimal_keys);
-        our $project_path = '../';                                     #project root path, absolute or related to script startup directory
-        our $pharaoh_path = \'lib/pharaoh.pm';                         #absolute path to Pharaoh framework or scalar reference to pharaoh.pm file
-        our @libs         = qw(lib/);                                  #additional libraries paths, absolute or related to $project_path
-        our @config       = qw(lib/cfg_common.pm lib/cfg_local.pm);    #local configuration files
-        our $config       = {};                                        #inline configuration
+        our $project_path = '../';                                              #project root path, absolute or related to script startup directory
+        our $pharaoh_path = \'lib/pharaoh.pm';                                  #absolute path to Pharaoh framework or scalar reference to pharaoh.pm file
+        our @libs         = qw(lib/);                                           #additional libraries paths, absolute or related to $project_path
+        our $config       = [ 'lib/cfg_common.pm', 'lib/cfg_local.pm', {} ];    #local configuration files as SCALAR (absolute or relative to project path), or inline config as HASH ref
         require Pharaoh::BootStrap;
     }
 
-    use Pharaoh::Core 4.00;
+use Pharaoh::Core 4.00;
 
 =head1 AUTHOR
 
