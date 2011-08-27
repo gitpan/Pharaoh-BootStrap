@@ -1,10 +1,10 @@
-package Pharaoh::BootStrap 4.02;
+package Pharaoh::BootStrap 4.03;
 
 use 5.14.1;
 use warnings;
 use utf8;
-use namespace::autoclean;
 use open IO => ':utf8';
+use namespace::autoclean;
 
 BEGIN {
     use FindBin;
@@ -14,14 +14,17 @@ BEGIN {
     chdir $FindBin::Bin;
     chdir($main::project_path) if $main::project_path;
 
-    if (ref $main::pharaoh_path eq 'SCALAR' && -e $$main::pharaoh_path) {
+    if (ref $main::pharaoh_path eq 'SCALAR') {
+		die 'Pharaoh path config was not found!' unless -e $$main::pharaoh_path;
         $main::pharaoh_path = do $$main::pharaoh_path || die $@;
     }
 
-    @INC = grep { $_ ne '.' } @INC;
+    @INC = grep { !($_ eq '.' || $_ eq './') } @INC;
+    unshift @INC, $main::pharaoh_path . 'lib/' if ($main::pharaoh_path && -d $main::pharaoh_path);
     unshift @INC, $main::pharaoh_path if ($main::pharaoh_path && -d $main::pharaoh_path);
     unshift @INC, @main::libs         if (@main::libs);
-    unshift @INC, '.';
+    unshift @INC, $FindBin::Bin . '/';
+    unshift @INC, './';
 }
 
 =head1 NAME
@@ -30,7 +33,7 @@ Pharaoh::BootStrap - Pharaoh bootstrap module.
 
 =head1 VERSION
 
-Version 4.02
+Version 4.03
 
 =cut
 
@@ -46,6 +49,7 @@ Quick summary of what the module does.
     use warnings;
     use utf8;
     use open IO => ':utf8';
+    use namespace::autoclean;
     
     BEGIN {
         use Getopt::Euclid qw (:minimal_keys);
@@ -56,7 +60,7 @@ Quick summary of what the module does.
         require Pharaoh::BootStrap;
     }
 
-use Pharaoh::Core 4.00;
+    use Pharaoh::Core 4.00;
 
 =head1 AUTHOR
 
