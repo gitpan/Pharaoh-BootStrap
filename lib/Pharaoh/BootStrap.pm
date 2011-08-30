@@ -1,4 +1,4 @@
-package Pharaoh::BootStrap 4.03;
+package Pharaoh::BootStrap 4.04;
 
 use 5.14.1;
 use warnings;
@@ -7,24 +7,51 @@ use open IO => ':utf8';
 use namespace::autoclean;
 
 BEGIN {
+	use Cwd;
     use FindBin;
     $0 = $FindBin::Bin . '/' . $FindBin::Script;
     $FindBin::Bin =~ /(.*)/;
     $FindBin::Bin = $1;
     chdir $FindBin::Bin;
-    chdir($main::project_path) if $main::project_path;
+    chdir($main::root_path) if $main::root_path;
 
     if (ref $main::pharaoh_path eq 'SCALAR') {
 		die 'Pharaoh path config was not found!' unless -e $$main::pharaoh_path;
         $main::pharaoh_path = do $$main::pharaoh_path || die $@;
     }
 
-    @INC = grep { !($_ eq '.' || $_ eq './') } @INC;
-    unshift @INC, $main::pharaoh_path . 'lib/' if ($main::pharaoh_path && -d $main::pharaoh_path);
-    unshift @INC, $main::pharaoh_path if ($main::pharaoh_path && -d $main::pharaoh_path);
-    unshift @INC, @main::libs         if (@main::libs);
-    unshift @INC, $FindBin::Bin . '/';
-    unshift @INC, './';
+	my $NEW_INC = {};
+	my $order = 1;
+    map {
+		my $path = &Cwd::abs_path($_) . '/';
+		$NEW_INC->{$path} = ++$order;
+	} reverse @INC;
+
+	if ($main::pharaoh_path && -d $main::pharaoh_path)
+	{
+		my $path = &Cwd::abs_path($main::pharaoh_path) . '/';
+		$NEW_INC->{$path . 'lib/'} = ++$order;
+		$NEW_INC->{$path} = ++$order;
+	}
+	
+	foreach my $path (grep {-d $_} reverse @main::libs){
+		my $path = &Cwd::abs_path($path) . '/';
+		$NEW_INC->{$path} = ++$order;
+	}
+
+	{
+		my $path = &Cwd::getcwd . '/';
+		$NEW_INC->{$path . 'lib/'} = ++$order;
+		$NEW_INC->{$path} = ++$order;
+	}
+
+	{
+		my $path = &Cwd::abs_path($FindBin::Bin) . '/';
+		$NEW_INC->{$path . 'lib/'} = ++$order;
+		$NEW_INC->{$path} = ++$order;
+	}
+
+	@INC = sort {$NEW_INC->{$b} <=> $NEW_INC->{$a}} keys %$NEW_INC;
 }
 
 =head1 NAME
@@ -33,7 +60,7 @@ Pharaoh::BootStrap - Pharaoh bootstrap module.
 
 =head1 VERSION
 
-Version 4.03
+Version 4.04
 
 =cut
 
@@ -53,10 +80,10 @@ Quick summary of what the module does.
     
     BEGIN {
         use Getopt::Euclid qw (:minimal_keys);
-        our $project_path = '../';                                              #project root path, absolute or related to script startup directory
+        our $root_path    = '../';                                              #project root path, absolute or related to script startup directory
         our $pharaoh_path = \'lib/pharaoh.pm';                                  #absolute path to Pharaoh framework or scalar reference to pharaoh.pm file
-        our @libs         = qw(lib/);                                           #additional libraries paths, absolute or related to $project_path
-        our $config       = [ 'lib/cfg_common.pm', 'lib/cfg_local.pm', {} ];    #local configuration files as SCALAR (absolute or relative to project path), or inline config as HASH ref
+        our @libs         = qw(lib/);                                           #additional libraries paths, absolute or related to root path
+        our $config       = [ 'lib/cfg_common.pm', 'lib/cfg_local.pm', {} ];    #local configuration files as SCALAR (absolute or relative to root path), or inline config as HASH ref
         require Pharaoh::BootStrap;
     }
 
