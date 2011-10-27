@@ -1,58 +1,90 @@
-package Pharaoh::BootStrap 4.04;
+package Pharaoh::BootStrap 5.00;
 
-use 5.14.1;
+use strict;
 use warnings;
 use utf8;
-use open IO => ':utf8';
-use namespace::autoclean;
+use FindBin();
+use Cwd();
 
-BEGIN {
-	use Cwd;
-    use FindBin;
-    $0 = $FindBin::Bin . '/' . $FindBin::Script;
-    $FindBin::Bin =~ /(.*)/;
-    $FindBin::Bin = $1;
-    chdir $FindBin::Bin;
-    chdir($main::root_path) if $main::root_path;
+our $CO = {};
 
-    if (ref $main::pharaoh_path eq 'SCALAR') {
-		die 'Pharaoh path config was not found!' unless -e $$main::pharaoh_path;
-        $main::pharaoh_path = do $$main::pharaoh_path || die $@;
+($FindBin::RealBin) = $FindBin::RealBin =~ /^(.*)$/;    #untaint
+chdir $FindBin::RealBin;
+
+$CO->{ROOT_PATH} = $main::CO->{ROOT_PATH} || $FindBin::RealBin;
+eval { $CO->{ROOT_PATH} = &Cwd::abs_path($CO->{ROOT_PATH}) . '/'; };
+die "ROOT_PATH error! $@" if $@;
+($CO->{ROOT_PATH}) = $CO->{ROOT_PATH} =~ /^(.*)$/;      #untaint
+chdir($CO->{ROOT_PATH});
+delete $main::CO->{ROOT_PATH} if $main::CO->{ROOT_PATH};
+
+if ($main::CO->{CONFIG}) {
+    for my $file (@{ $main::CO->{CONFIG} }) {
+        &merge_hashes($CO, &load_config($file));
     }
-
-	my $NEW_INC = {};
-	my $order = 1;
-    map {
-		my $path = &Cwd::abs_path($_) . '/';
-		$NEW_INC->{$path} = ++$order;
-	} reverse @INC;
-
-	if ($main::pharaoh_path && -d $main::pharaoh_path)
-	{
-		my $path = &Cwd::abs_path($main::pharaoh_path) . '/';
-		$NEW_INC->{$path . 'lib/'} = ++$order;
-		$NEW_INC->{$path} = ++$order;
-	}
-	
-	foreach my $path (grep {-d $_} reverse @main::libs){
-		my $path = &Cwd::abs_path($path) . '/';
-		$NEW_INC->{$path} = ++$order;
-	}
-
-	{
-		my $path = &Cwd::getcwd . '/';
-		$NEW_INC->{$path . 'lib/'} = ++$order;
-		$NEW_INC->{$path} = ++$order;
-	}
-
-	{
-		my $path = &Cwd::abs_path($FindBin::Bin) . '/';
-		$NEW_INC->{$path . 'lib/'} = ++$order;
-		$NEW_INC->{$path} = ++$order;
-	}
-
-	@INC = sort {$NEW_INC->{$b} <=> $NEW_INC->{$a}} keys %$NEW_INC;
 }
+&merge_hashes($CO, $main::CO);
+
+$CO->{SCRIPT_FILENAME} = $FindBin::RealScript;
+$CO->{SCRIPT_PATH}     = &Cwd::abs_path($FindBin::RealBin) . '/';
+
+eval { $CO->{PHARAOH_PATH} = $CO->{PHARAOH_PATH} ? (&Cwd::abs_path($CO->{PHARAOH_PATH}) . '/') : $ENV{PHARAOH_PATH} ? (&Cwd::abs_path($ENV{PHARAOH_PATH}) . '/') : ''; };
+die "PHARAOH_PATH error! $@" if $@;
+unshift @INC, $CO->{PHARAOH_PATH} if $CO->{PHARAOH_PATH};
+
+#modify @INC
+my $NEW_INC = {};
+my $order   = 1;
+map { $NEW_INC->{ &Cwd::abs_path($_) . '/' } = ++$order; } reverse @INC;
+
+$NEW_INC->{ $CO->{PHARAOH_PATH} . 'lib/' } = ++$order;
+$NEW_INC->{ $CO->{PHARAOH_PATH} } = ++$order;
+
+if ($CO->{INC}) {
+    foreach my $path (grep { -d $_ } reverse @{ $CO->{INC} }) {
+        $NEW_INC->{ &Cwd::abs_path($path) . '/' } = ++$order;
+    }
+}
+
+$NEW_INC->{ $CO->{ROOT_PATH} . 'lib/' } = ++$order if $CO->{ROOT_PATH};
+$NEW_INC->{ $CO->{ROOT_PATH} } = ++$order if $CO->{ROOT_PATH};
+$NEW_INC->{ $CO->{SCRIPT_PATH} . 'lib/' } = ++$order;
+$NEW_INC->{ $CO->{SCRIPT_PATH} } = ++$order;
+
+@INC = sort { $NEW_INC->{$b} <=> $NEW_INC->{$a} } keys %$NEW_INC;
+
+sub i18n {
+    return [@_];
+}
+
+sub load_config {
+    my $filename = shift;
+
+    my $config = do $filename;
+    die "$filename: $!" if $!;
+    die "$filename: $@" if $@;
+
+    return $config;
+}
+
+sub merge_hashes {
+    my $a = shift;
+    my $b = shift;
+
+    foreach my $key (keys %{$b}) {
+        if (ref($b->{$key}) eq 'HASH') {
+            $a->{$key} = {} unless (ref($a->{$key}) eq 'HASH');
+            &merge_hashes($a->{$key}, $b->{$key});
+        }
+        else {
+            $a->{$key} = $b->{$key};
+        }
+    }
+    return 1;
+}
+
+1;
+__END__
 
 =head1 NAME
 
@@ -60,7 +92,7 @@ Pharaoh::BootStrap - Pharaoh bootstrap module.
 
 =head1 VERSION
 
-Version 4.04
+Version 5.00
 
 =cut
 
@@ -72,22 +104,18 @@ Quick summary of what the module does.
 
     package main;
 
-    use 5.14.1;
-    use warnings;
-    use utf8;
-    use open IO => ':utf8';
-    use namespace::autoclean;
-    
     BEGIN {
-        use Getopt::Euclid qw (:minimal_keys);
-        our $root_path    = '../';                                              #project root path, absolute or related to script startup directory
-        our $pharaoh_path = \'lib/pharaoh.pm';                                  #absolute path to Pharaoh framework or scalar reference to pharaoh.pm file
-        our @libs         = qw(lib/);                                           #additional libraries paths, absolute or related to root path
-        our $config       = [ 'lib/cfg_common.pm', 'lib/cfg_local.pm', {} ];    #local configuration files as SCALAR (absolute or relative to root path), or inline config as HASH ref
-        require Pharaoh::BootStrap;
+        use Getopt::Euclid qw (:minimal_keys);    #remove, if Getopt::Euclid not used
+        our $CO = {
+            ROOT_PATH    => '',                   #project root path, absolute or related to script startup directory
+            PHARAOH_PATH => '',                   #absolute path to Pharaoh framework
+            INC          => [],                   #additional libraries paths, absolute or related to root path
+            CONFIG       => [],                   #local configuration files as (absolute or relative to root path)
+            ...                                   #additional configuration keys
+        };
     }
 
-    use Pharaoh::Core 4.00;
+Local $CO will be merged with global $CO during project startup.
 
 =head1 AUTHOR
 
@@ -138,5 +166,3 @@ by the Free Software Foundation; or the Artistic License.
 See http://dev.perl.org/licenses/ for more information.
 
 =cut
-
-1;
