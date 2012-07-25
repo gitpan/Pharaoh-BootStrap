@@ -1,4 +1,4 @@
-package Pharaoh::BootStrap 5.00;
+package Pharaoh::BootStrap 0.01;
 
 use strict;
 use warnings;
@@ -20,10 +20,10 @@ delete $main::CO->{ROOT_PATH} if $main::CO->{ROOT_PATH};
 
 if ($main::CO->{CONFIG}) {
     for my $file (@{ $main::CO->{CONFIG} }) {
-        &merge_hashes($CO, &load_config($file));
+        merge($CO, &load_config($file));
     }
 }
-&merge_hashes($CO, $main::CO);
+merge($CO, $main::CO);
 
 $CO->{SCRIPT_FILENAME} = $FindBin::RealScript;
 $CO->{SCRIPT_PATH}     = &Cwd::abs_path($FindBin::RealBin) . '/';
@@ -67,20 +67,25 @@ sub load_config {
     return $config;
 }
 
-sub merge_hashes {
+sub merge {
     my $a = shift;
     my $b = shift;
 
     foreach my $key (keys %{$b}) {
         if (ref($b->{$key}) eq 'HASH') {
             $a->{$key} = {} unless (ref($a->{$key}) eq 'HASH');
-            &merge_hashes($a->{$key}, $b->{$key});
+            merge($a->{$key}, $b->{$key});
+        }
+        elsif (ref($b->{$key}) eq 'ARRAY') {
+            $a->{$key} = [];
+            @{ $a->{$key} } = @{ $b->{$key} };
         }
         else {
             $a->{$key} = $b->{$key};
         }
     }
-    return 1;
+
+    return defined wantarray ? $a : undef;
 }
 
 1;
@@ -92,7 +97,7 @@ Pharaoh::BootStrap - Pharaoh bootstrap module.
 
 =head1 VERSION
 
-Version 5.00
+Version 0.01
 
 =cut
 
